@@ -64,8 +64,6 @@ defmodule Hornet.RateCounterTest do
 
     inc(pid, 500_000)
 
-    Process.sleep(1_000)
-
     assert RateCounter.rate(pid) == 500_000
   end
 
@@ -82,6 +80,6 @@ defmodule Hornet.RateCounterTest do
       raise RuntimeError, message: "executed more that 1 s"
     end
 
-    Process.sleep(round(1_000 - execution_time))
+    Process.sleep(round(1_100 - execution_time))
   end
 end
