@@ -5,7 +5,9 @@ defmodule Hornet.Scheduler do
   alias Hornet.Worker
 
   @min_period 100
+  @period_step 50
   @adjust_period 5_000
+  @error_rate 0.1
 
   def start_link(params) do
     GenServer.start_link(__MODULE__, params, name: Keyword.fetch!(params, :id))
@@ -18,8 +20,9 @@ defmodule Hornet.Scheduler do
   @impl true
   def init(params) do
     {:ok, rate_counter} = RateCounter.start_link()
+    period = params[:period] || @min_period
 
-    {pid, workers_count} = start_workers(params, rate_counter)
+    {pid, workers_count} = start_workers(params, rate_counter, period)
 
     {:ok, timer} = :timer.send_interval(@adjust_period, :adjust_workers)
 
@@ -28,6 +31,7 @@ defmodule Hornet.Scheduler do
       params: params,
       supervisor: pid,
       current_workers_count: workers_count,
+      period: period,
       timer: timer
     }
 
@@ -36,8 +40,23 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def handle_info(:adjust_workers, state) do
-    # TODO
-    {:noreply, state}
+    if correct_rate?(state) do
+      {:noreply, state}
+    else
+      :ok = Supervisor.stop(state.supervisor)
+      new_period = state.period + @period_step
+
+      {pid, workers_count} = start_workers(state.params, state.rate_counter, new_period)
+
+      new_state = %{
+        state
+        | supervisor: pid,
+          current_workers_count: workers_count,
+          period: new_period
+      }
+
+      {:noreply, new_state}
+    end
   end
 
   @impl true
@@ -45,12 +64,24 @@ defmodule Hornet.Scheduler do
     {:reply, state, state}
   end
 
-  defp start_workers(params, rate_counter) do
+  defp correct_rate?(state) do
+    current_rate = RateCounter.rate(state.rate_counter)
+    expected_rate = state.params[:rate]
+    error_rate = expected_rate * @error_rate
+
+    if current_rate > expected_rate do
+      current_rate - expected_rate < error_rate
+    else
+      expected_rate - current_rate < error_rate
+    end
+  end
+
+  defp start_workers(params, rate_counter, period) do
     rate = Keyword.fetch!(params, :rate)
     id = Keyword.fetch!(params, :id)
     func = Keyword.fetch!(params, :func)
 
-    {interval, initial_workers_number} = calculate_initial_workers_number(rate)
+    {interval, initial_workers_number} = calculate_workers_number(rate, period)
 
     workers =
       Enum.map(1..initial_workers_number, fn idx ->
@@ -66,15 +97,18 @@ defmodule Hornet.Scheduler do
     {pid, initial_workers_number}
   end
 
-  defp calculate_initial_workers_number(rate) do
-    if rate / @min_period < 1 do
+  defp calculate_workers_number(rate, period) do
+    period = period || @min_period
+    tps = 1000 / period
+
+    if rate / tps < 1 do
       period = round(1000 / rate)
 
       {period, 1}
     else
-      workers = round(rate / @min_period)
+      workers = round(rate / tps)
 
-      {@min_period, workers * 10}
+      {period, workers}
     end
   end
 end

@@ -44,7 +44,7 @@ defmodule Hornet.SchedulerTest do
       :ok
     end
 
-    params = [id: :test1, func: func, rate: 100_000]
+    params = [id: :test2, func: func, rate: 100_000]
 
     {:ok, _pid} = Scheduler.start_link(params)
 
@@ -56,6 +56,50 @@ defmodule Hornet.SchedulerTest do
     assert_rates(params[:rate], rate)
 
     assert 10_000 == state.current_workers_count
+  end
+
+  test "adjusts period" do
+    func = fn ->
+      Process.sleep(250)
+    end
+
+    params = [id: :test3, func: func, rate: 5]
+
+    {:ok, _pid} = Scheduler.start_link(params)
+
+    state = Scheduler.state(params[:id])
+
+    assert state.current_workers_count == 1
+    assert state.period == 100
+
+    Process.sleep(6_000)
+
+    new_state = Scheduler.state(params[:id])
+
+    assert new_state.current_workers_count == 1
+    assert new_state.period == 150
+  end
+
+  test "adjust the number of workers" do
+    func = fn ->
+      Process.sleep(1_000)
+    end
+
+    params = [id: :test4, func: func, rate: 2]
+
+    {:ok, _pid} = Scheduler.start_link(params)
+
+    state = Scheduler.state(params[:id])
+
+    assert state.current_workers_count == 1
+    assert state.period == 100
+
+    Process.sleep(6_000)
+
+    new_state = Scheduler.state(params[:id])
+
+    assert new_state.current_workers_count == 1
+    assert new_state.period == 150
   end
 
   defp assert_rates(expected, actual, percentage \\ 0.1) do
