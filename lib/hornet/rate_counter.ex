@@ -3,8 +3,8 @@ defmodule Hornet.RateCounter do
 
   @interval 1_000
 
-  def start_link do
-    GenServer.start_link(__MODULE__, [])
+  def start_link(params \\ []) do
+    GenServer.start_link(__MODULE__, params)
   end
 
   def inc(pid) do
@@ -16,17 +16,19 @@ defmodule Hornet.RateCounter do
   end
 
   @impl true
-  def init(_) do
-    {:ok, timer} = :timer.send_interval(@interval, :calculate_rate)
+  def init(params) do
+    interval = params[:interval] || @interval
+    {:ok, timer} = :timer.send_interval(interval, :calculate_rate)
 
-    state = %{rate: 0, count: 0, timer: timer}
+    state = %{rate: 0, count: 0, timer: timer, interval: interval}
 
     {:ok, state}
   end
 
   @impl true
   def handle_info(:calculate_rate, state) do
-    new_state = %{rate: state.count, count: 0, timer: state.timer}
+    rate = round(state.count / state.interval * 1000)
+    new_state = %{rate: rate, count: 0, timer: state.timer, interval: state.interval}
 
     {:noreply, new_state}
   end

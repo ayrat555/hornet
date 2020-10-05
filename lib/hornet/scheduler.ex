@@ -9,17 +9,19 @@ defmodule Hornet.Scheduler do
   @period_step 50
   @adjust_period 5_000
   @error_rate 0.1
+  @timeout 20_000
+  @rate_check 1_000
 
   def start_link(params) do
     GenServer.start_link(__MODULE__, params, name: Keyword.fetch!(params, :id))
   end
 
   def state(name) do
-    GenServer.call(name, :state)
+    GenServer.call(name, :state, @timeout)
   end
 
   def stop(name) do
-    :ok = GenServer.call(name, :stop)
+    :ok = GenServer.call(name, :stop, @timeout)
 
     pid = Process.whereis(name)
     true = Process.exit(pid, :kill)
@@ -29,12 +31,14 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def init(params) do
+    rate_period = params[:rate_period] || 1_000
+
     {:ok, supervisor} = HornetDynamicSupervisor.start_link()
 
     {:ok, rate_counter} =
       DynamicSupervisor.start_child(supervisor, %{
         id: RateCounter,
-        start: {RateCounter, :start_link, []}
+        start: {RateCounter, :start_link, [[interval: rate_period]]}
       })
 
     rate = Keyword.fetch!(params, :rate)

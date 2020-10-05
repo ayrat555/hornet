@@ -67,7 +67,15 @@ defmodule Hornet.RateCounterTest do
     assert RateCounter.rate(pid) == 500_000
   end
 
-  defp inc(pid, count) do
+  test "calculate average rate for 2 seconds" do
+    {:ok, pid} = RateCounter.start_link(interval: 2_000)
+
+    inc(pid, 60, 2_000)
+
+    assert RateCounter.rate(pid) == 30
+  end
+
+  defp inc(pid, count, timeout \\ 1_000) do
     func = fn -> Enum.each(1..count, fn _ -> RateCounter.inc(pid) end) end
 
     execution_time =
@@ -80,6 +88,6 @@ defmodule Hornet.RateCounterTest do
       raise RuntimeError, message: "executed more that 1 s"
     end
 
-    Process.sleep(round(1_100 - execution_time))
+    Process.sleep(round(timeout + 100 - execution_time))
   end
 end
