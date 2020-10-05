@@ -17,10 +17,9 @@ defmodule Hornet.Worker do
       Process.send_after(self(), :run, 500)
     end
 
-    {:ok, timer} = :timer.send_interval(interval, :run)
+    Process.send_after(self(), :run_and_schedule, interval)
 
-    state = %{func: func, interval: interval, timer: timer, rate_counter: rate_counter}
-
+    state = %{func: func, interval: interval, rate_counter: rate_counter}
     {:ok, state}
   end
 
@@ -31,8 +30,21 @@ defmodule Hornet.Worker do
     {:noreply, state}
   end
 
+  @impl true
+  def handle_info(:run_and_schedule, state) do
+    execute_and_schedule(state)
+
+    {:noreply, state}
+  end
+
   defp execute(state) do
     state.func.()
     :ok = RateCounter.inc(state.rate_counter)
+  end
+
+  defp execute_and_schedule(state) do
+    execute(state)
+
+    Process.send_after(self(), :run_and_schedule, state.interval)
   end
 end

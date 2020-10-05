@@ -31,7 +31,7 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def init(params) do
-    rate_period = params[:rate_period] || 1_000
+    rate_period = params[:rate_period] || @rate_check
 
     {:ok, supervisor} = HornetDynamicSupervisor.start_link()
 

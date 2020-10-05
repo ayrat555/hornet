@@ -27,7 +27,7 @@ defmodule Hornet.RateCounter do
 
   @impl true
   def handle_info(:calculate_rate, state) do
-    rate = round(state.count / state.interval * 1000)
+    rate = state.count * 1000 / state.interval
     new_state = %{rate: rate, count: 0, timer: state.timer, interval: state.interval}
 
     {:noreply, new_state}
