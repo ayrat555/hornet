@@ -17,6 +17,15 @@ defmodule Hornet.Scheduler do
     GenServer.call(name, :state)
   end
 
+  def stop(name) do
+    :ok = GenServer.call(name, :stop)
+
+    pid = Process.whereis(name)
+    true = Process.exit(pid, :kill)
+
+    :ok
+  end
+
   @impl true
   def init(params) do
     {:ok, rate_counter} = RateCounter.start_link()
@@ -74,6 +83,14 @@ defmodule Hornet.Scheduler do
   @impl true
   def handle_call(:state, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call(:stop, _from, state) do
+    :ok = GenServer.stop(state.rate_counter)
+    :ok = Supervisor.stop(state.supervisor)
+
+    {:reply, :ok, state}
   end
 
   defp correct_rate?(state) do

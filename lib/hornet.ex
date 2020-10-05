@@ -1,18 +1,11 @@
 defmodule Hornet do
-  @moduledoc """
-  Documentation for `Hornet`.
-  """
+  alias Hornet.Scheduler
 
-  @doc """
-  Hello world.
+  def start(params) do
+    Scheduler.start_link(params)
+  end
 
-  ## Examples
-
-      iex> Hornet.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def stop(name) do
+    Scheduler.stop(name)
   end
 end

@@ -19,6 +19,8 @@ defmodule Hornet.SchedulerTest do
     rate = RateCounter.rate(state.rate_counter)
 
     assert params[:rate] == rate
+
+    :ok = Scheduler.stop(params[:id])
   end
 
   test "starts workers which maintain rate with multiple workers" do
@@ -37,6 +39,8 @@ defmodule Hornet.SchedulerTest do
 
     assert params[:rate] == rate
     assert 100 == state.current_workers_count
+
+    :ok = Scheduler.stop(params[:id])
   end
 
   test "starts many workers" do
@@ -56,6 +60,8 @@ defmodule Hornet.SchedulerTest do
     assert_rates(params[:rate], rate)
 
     assert 10_000 == state.current_workers_count
+
+    :ok = Scheduler.stop(params[:id])
   end
 
   test "adjusts period" do
@@ -78,6 +84,8 @@ defmodule Hornet.SchedulerTest do
 
     assert new_state.current_workers_count == 1
     assert new_state.period == 150
+
+    :ok = Scheduler.stop(params[:id])
   end
 
   test "adjust the number of workers" do
@@ -111,6 +119,24 @@ defmodule Hornet.SchedulerTest do
     rate = RateCounter.rate(state.rate_counter)
 
     assert params[:rate] == rate
+
+    :ok = Scheduler.stop(params[:id])
+  end
+
+  test "stops scheduler and all child processes" do
+    func = fn ->
+      :ok
+    end
+
+    params = [id: :test5, func: func, rate: 5]
+
+    {:ok, _pid} = Scheduler.start_link(params)
+
+    state = Scheduler.state(params[:id])
+    Scheduler.stop(params[:id])
+
+    refute Process.alive?(state.supervisor)
+    refute Process.alive?(state.rate_counter)
   end
 
   defp assert_rates(expected, actual, percentage \\ 0.1) do
