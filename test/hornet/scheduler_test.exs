@@ -114,7 +114,6 @@ defmodule Hornet.SchedulerTest do
     new_state = Scheduler.state(params[:id])
 
     assert new_state.current_workers_count == 2
-    assert new_state.period == 800
 
     rate = RateCounter.rate(state.rate_counter)
 

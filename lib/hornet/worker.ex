@@ -16,15 +16,20 @@ defmodule Hornet.Worker do
     {:ok, timer} = :timer.send_interval(interval, :run)
 
     state = %{func: func, interval: interval, timer: timer, rate_counter: rate_counter}
+    execute(state)
 
     {:ok, state}
   end
 
   @impl true
   def handle_info(:run, state) do
-    state.func.()
-    :ok = RateCounter.inc(state.rate_counter)
+    execute(state)
 
     {:noreply, state}
+  end
+
+  defp execute(state) do
+    state.func.()
+    :ok = RateCounter.inc(state.rate_counter)
   end
 end
