@@ -137,6 +137,7 @@ defmodule Hornet.SchedulerTest do
 
     refute Process.alive?(state.supervisor)
     refute Process.alive?(state.rate_counter)
+    refute Process.alive?(state.worker_supervisor)
   end
 
   defp assert_rates(expected, actual, percentage \\ 0.1) do

@@ -1,8 +1,9 @@
 defmodule Hornet.Scheduler do
   use GenServer
 
+  alias Hornet.DynamicSupervisor, as: HornetDynamicSupervisor
   alias Hornet.RateCounter
-  alias Hornet.Worker
+  alias Hornet.Worker.WorkerSupervisor
 
   @start_period 100
   @period_step 50
@@ -28,7 +29,13 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def init(params) do
-    {:ok, rate_counter} = RateCounter.start_link()
+    {:ok, supervisor} = HornetDynamicSupervisor.start_link()
+
+    {:ok, rate_counter} =
+      DynamicSupervisor.start_child(supervisor, %{
+        id: RateCounter,
+        start: {RateCounter, :start_link, []}
+      })
 
     rate = Keyword.fetch!(params, :rate)
     id = Keyword.fetch!(params, :id)
@@ -40,13 +47,14 @@ defmodule Hornet.Scheduler do
     adjust_period = params[:adjust_period] || @adjust_period
     error_rate = params[:error_rate] || @error_rate
 
-    {pid, workers_count} = start_workers(worker_params, rate_counter, period)
+    {pid, workers_count} = start_workers(supervisor, worker_params, rate_counter, period)
 
     {:ok, timer} = :timer.send_interval(adjust_period, :adjust_workers)
 
     state = %{
       rate_counter: rate_counter,
-      supervisor: pid,
+      worker_supervisor: pid,
+      supervisor: supervisor,
       current_workers_count: workers_count,
       period: period,
       period_step: period_step,
@@ -64,14 +72,15 @@ defmodule Hornet.Scheduler do
     if correct_rate?(state) do
       {:noreply, state}
     else
-      :ok = Supervisor.stop(state.supervisor)
+      :ok = DynamicSupervisor.terminate_child(state.supervisor, state.worker_supervisor)
       new_period = state.period + state.period_step
 
-      {pid, workers_count} = start_workers(state.params, state.rate_counter, new_period)
+      {pid, workers_count} =
+        start_workers(state.supervisor, state.params, state.rate_counter, new_period)
 
       new_state = %{
         state
-        | supervisor: pid,
+        | worker_supervisor: pid,
           current_workers_count: workers_count,
           period: new_period
       }
@@ -87,8 +96,7 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def handle_call(:stop, _from, state) do
-    :ok = GenServer.stop(state.rate_counter)
-    :ok = Supervisor.stop(state.supervisor)
+    :ok = DynamicSupervisor.stop(state.supervisor)
 
     {:reply, :ok, state}
   end
@@ -105,23 +113,28 @@ defmodule Hornet.Scheduler do
     end
   end
 
-  defp start_workers(params, rate_counter, period) do
+  defp start_workers(supervisor, params, rate_counter, period) do
     rate = Keyword.fetch!(params, :rate)
     id = Keyword.fetch!(params, :id)
     func = Keyword.fetch!(params, :func)
 
     {interval, initial_workers_number} = calculate_workers_number(rate, period)
 
-    workers =
-      Enum.map(1..initial_workers_number, fn idx ->
-        %{
-          id: {id, idx},
-          start:
-            {Worker, :start_link, [[interval: interval, func: func, rate_counter: rate_counter]]}
-        }
-      end)
+    params = [
+      rate: rate,
+      id: id,
+      func: func,
+      rate_counter: rate_counter,
+      workers_number: initial_workers_number,
+      interval: interval
+    ]
 
-    {:ok, pid} = Supervisor.start_link(workers, strategy: :one_for_one)
+    {:ok, pid} =
+      DynamicSupervisor.start_child(supervisor, %{
+        id: :worker_supervisor,
+        start: {WorkerSupervisor, :start_link, [params]},
+        type: :supervisor
+      })
 
     {pid, initial_workers_number}
   end
