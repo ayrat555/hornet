@@ -42,6 +42,7 @@ Optional parameters:
 ```elixir
     :period - starting period for processes. Each process executes the function periocally using this period. Default value is 100 ms
     :period_step - adjusting step for the period. Default value is 50 ms
+    :rate_period - period of rate update
     :adjust_period - number of workers and period are adjusted periocally using this value. Default value is 5000 ms
     :error_rate - allowed error rate |expected_rate - actual_rate| / expected_rate < error_rate. Default value is 0.1
 ```
