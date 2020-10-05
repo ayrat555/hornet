@@ -4,7 +4,7 @@ defmodule Hornet.Scheduler do
   alias Hornet.RateCounter
   alias Hornet.Worker
 
-  @min_period 100
+  @start_period 100
   @period_step 50
   @adjust_period 5_000
   @error_rate 0.1
@@ -20,18 +20,30 @@ defmodule Hornet.Scheduler do
   @impl true
   def init(params) do
     {:ok, rate_counter} = RateCounter.start_link()
-    period = params[:period] || @min_period
 
-    {pid, workers_count} = start_workers(params, rate_counter, period)
+    rate = Keyword.fetch!(params, :rate)
+    id = Keyword.fetch!(params, :id)
+    func = Keyword.fetch!(params, :func)
+    worker_params = [rate: rate, id: id, func: func]
 
-    {:ok, timer} = :timer.send_interval(@adjust_period, :adjust_workers)
+    period = params[:start_period] || @start_period
+    period_step = params[:adjust_step] || @period_step
+    adjust_period = params[:adjust_period] || @adjust_period
+    error_rate = params[:error_rate] || @error_rate
+
+    {pid, workers_count} = start_workers(worker_params, rate_counter, period)
+
+    {:ok, timer} = :timer.send_interval(adjust_period, :adjust_workers)
 
     state = %{
       rate_counter: rate_counter,
-      params: params,
       supervisor: pid,
       current_workers_count: workers_count,
       period: period,
+      period_step: period_step,
+      adjust_period: adjust_period,
+      error_rate: error_rate,
+      params: worker_params,
       timer: timer
     }
 
@@ -44,7 +56,7 @@ defmodule Hornet.Scheduler do
       {:noreply, state}
     else
       :ok = Supervisor.stop(state.supervisor)
-      new_period = state.period + @period_step
+      new_period = state.period + state.period_step
 
       {pid, workers_count} = start_workers(state.params, state.rate_counter, new_period)
 
@@ -67,7 +79,7 @@ defmodule Hornet.Scheduler do
   defp correct_rate?(state) do
     current_rate = RateCounter.rate(state.rate_counter)
     expected_rate = state.params[:rate]
-    error_rate = expected_rate * @error_rate
+    error_rate = expected_rate * state.error_rate
 
     if current_rate > expected_rate do
       current_rate - expected_rate < error_rate
@@ -98,8 +110,7 @@ defmodule Hornet.Scheduler do
   end
 
   defp calculate_workers_number(rate, period) do
-    period = period || @min_period
-    tps = 1000 / period
+    tps = 1_000 / period
 
     if rate / tps < 1 do
       period = round(1000 / rate)
