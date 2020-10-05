@@ -13,10 +13,13 @@ defmodule Hornet.Worker do
     interval = Keyword.fetch!(params, :interval)
     rate_counter = Keyword.fetch!(params, :rate_counter)
 
+    if interval > 10_000 do
+      Process.send_after(self(), :run, 500)
+    end
+
     {:ok, timer} = :timer.send_interval(interval, :run)
 
     state = %{func: func, interval: interval, timer: timer, rate_counter: rate_counter}
-    execute(state)
 
     {:ok, state}
   end

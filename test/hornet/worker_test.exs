@@ -39,4 +39,18 @@ defmodule Hornet.WorkerTest do
 
     assert RateCounter.rate(pid) == 10
   end
+
+  test "executes func immediately if interval is too long" do
+    test_pid = self()
+
+    func = fn ->
+      send(test_pid, :hello)
+    end
+
+    {:ok, pid} = RateCounter.start_link()
+
+    Worker.start_link(func: func, interval: 100, rate_counter: pid)
+
+    assert_receive :hello, 1000
+  end
 end
