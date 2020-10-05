@@ -142,7 +142,7 @@ defmodule Hornet.Scheduler do
   defp calculate_workers_number(rate, period) do
     tps = 1_000 / period
 
-    if rate / tps < 1 do
+    if rate / tps <= 1 do
       period = round(1000 / rate)
 
       {period, 1}
