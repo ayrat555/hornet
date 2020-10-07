@@ -50,6 +50,7 @@ defmodule Hornet.Scheduler do
     period_step = params[:adjust_step] || @period_step
     adjust_period = params[:adjust_period] || @adjust_period
     error_rate = params[:error_rate] || @error_rate
+    process_number_limit = params[:process_number_limit]
 
     {pid, workers_count} = start_workers(supervisor, worker_params, rate_counter, period)
 
@@ -65,6 +66,7 @@ defmodule Hornet.Scheduler do
       adjust_period: adjust_period,
       error_rate: error_rate,
       params: worker_params,
+      process_number_limit: process_number_limit,
       timer: timer
     }
 
@@ -73,23 +75,15 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def handle_info(:adjust_workers, state) do
-    if correct_rate?(state) do
-      {:noreply, state}
-    else
-      :ok = DynamicSupervisor.terminate_child(state.supervisor, state.worker_supervisor)
-      new_period = state.period + state.period_step
+    cond do
+      correct_rate?(state) ->
+        {:noreply, state}
 
-      {pid, workers_count} =
-        start_workers(state.supervisor, state.params, state.rate_counter, new_period)
+      process_number_limit?(state) ->
+        {:noreply, state}
 
-      new_state = %{
-        state
-        | worker_supervisor: pid,
-          current_workers_count: workers_count,
-          period: new_period
-      }
-
-      {:noreply, new_state}
+      true ->
+        adjust_workers(state)
     end
   end
 
@@ -103,6 +97,29 @@ defmodule Hornet.Scheduler do
     :ok = DynamicSupervisor.stop(state.supervisor)
 
     {:reply, :ok, state}
+  end
+
+  defp adjust_workers(state) do
+    :ok = DynamicSupervisor.terminate_child(state.supervisor, state.worker_supervisor)
+    new_period = state.period + state.period_step
+
+    {pid, workers_count} =
+      start_workers(state.supervisor, state.params, state.rate_counter, new_period)
+
+    new_state = %{
+      state
+      | worker_supervisor: pid,
+        current_workers_count: workers_count,
+        period: new_period
+    }
+
+    {:noreply, new_state}
+  end
+
+  defp process_number_limit?(state) do
+    {_, new_number} = calculate_workers_number(state.params[:rate], state.period)
+
+    state[:process_number_limit] && state[:process_number_limit] <= new_number
   end
 
   defp correct_rate?(state) do

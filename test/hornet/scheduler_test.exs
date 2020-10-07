@@ -122,6 +122,42 @@ defmodule Hornet.SchedulerTest do
     :ok = Scheduler.stop(params[:id])
   end
 
+  test "does not adjust the number of workers if process number limit is set" do
+    func = fn ->
+      Process.sleep(400)
+    end
+
+    params = [
+      id: :test4,
+      func: func,
+      rate: 4,
+      adjust_period: 3_000,
+      adjust_step: 300,
+      start_period: 100,
+      process_number_limit: 1
+    ]
+
+    {:ok, _pid} = Scheduler.start_link(params)
+
+    state = Scheduler.state(params[:id])
+
+    assert state.current_workers_count == 1
+    assert state.period == 100
+
+    Process.sleep(10_000)
+
+    new_state = Scheduler.state(params[:id])
+
+    assert new_state.current_workers_count == 1
+
+    rate = RateCounter.rate(state.rate_counter)
+
+    assert 2.0 == rate
+    assert state.period == 100
+
+    :ok = Scheduler.stop(params[:id])
+  end
+
   test "stops scheduler and all child processes" do
     func = fn ->
       :ok
