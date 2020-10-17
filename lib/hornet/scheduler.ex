@@ -3,25 +3,21 @@ defmodule Hornet.Scheduler do
 
   alias Hornet.DynamicSupervisor, as: HornetDynamicSupervisor
   alias Hornet.RateCounter
+  alias Hornet.ParamsValidator
   alias Hornet.Worker.WorkerSupervisor
 
-  @start_period 100
-  @period_step 50
-  @adjust_period 5_000
-  @error_rate 0.1
-  @timeout 20_000
-  @rate_check 1_000
-
   def start_link(params) do
-    GenServer.start_link(__MODULE__, params, name: Keyword.fetch!(params, :id))
+    clean_params = ParamsValidator.validate!(params)
+
+    GenServer.start_link(__MODULE__, clean_params, name: Keyword.fetch!(params, :id))
   end
 
   def state(name) do
-    GenServer.call(name, :state, @timeout)
+    GenServer.call(name, :state)
   end
 
   def stop(name) do
-    :ok = GenServer.call(name, :stop, @timeout)
+    :ok = GenServer.call(name, :stop)
 
     pid = Process.whereis(name)
     true = Process.exit(pid, :kill)
@@ -46,10 +42,10 @@ defmodule Hornet.Scheduler do
     func = Keyword.fetch!(params, :func)
     worker_params = [rate: rate, id: id, func: func]
 
-    period = params[:start_period] || @start_period
-    period_step = params[:adjust_step] || @period_step
-    adjust_period = params[:adjust_period] || @adjust_period
-    error_rate = params[:error_rate] || @error_rate
+    period = params[:start_period]
+    period_step = params[:adjust_step]
+    adjust_period = params[:adjust_period]
+    error_rate = params[:error_rate]
     process_number_limit = params[:process_number_limit]
 
     {pid, workers_count} = start_workers(supervisor, worker_params, rate_counter, period)
