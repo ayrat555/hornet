@@ -7,7 +7,25 @@ defmodule Hornet.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package(),
+      name: "Hornet",
+      description: description()
+    ]
+  end
+
+  defp description do
+    """
+    Hornet is a simple library for stress testing.
+    """
+  end
+
+  defp package do
+    [
+      name: :hornet,
+      maintainers: ["Ayrat Badykov"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/ayrat555/hornet"}
     ]
   end
 
@@ -22,7 +40,8 @@ defmodule Hornet.MixProject do
   defp deps do
     [
       {:credo, "~> 1.5.0-rc.2", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 end
