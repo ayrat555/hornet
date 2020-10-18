@@ -1,4 +1,6 @@
 defmodule Hornet.Worker.WorkerSupervisor do
+  @moduledoc false
+
   use Supervisor
 
   alias Hornet.Worker

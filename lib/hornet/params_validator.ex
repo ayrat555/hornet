@@ -1,4 +1,6 @@
 defmodule Hornet.ParamsValidator do
+  @moduledoc false
+
   @required_fields [:rate, :id, :func]
   @optional_fields %{
     start_period: 100,

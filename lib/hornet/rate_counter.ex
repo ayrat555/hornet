@@ -1,4 +1,6 @@
 defmodule Hornet.RateCounter do
+  @moduledoc false
+
   use GenServer
 
   @interval 1_000

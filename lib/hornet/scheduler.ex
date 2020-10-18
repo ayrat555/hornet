@@ -1,4 +1,6 @@
 defmodule Hornet.Scheduler do
+  @moduledoc false
+
   use GenServer
 
   alias Hornet.DynamicSupervisor, as: HornetDynamicSupervisor

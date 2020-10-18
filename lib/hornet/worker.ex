@@ -1,4 +1,6 @@
 defmodule Hornet.Worker do
+  @moduledoc false
+
   use GenServer
 
   alias Hornet.RateCounter
