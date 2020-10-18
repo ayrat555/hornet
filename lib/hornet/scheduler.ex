@@ -6,16 +6,19 @@ defmodule Hornet.Scheduler do
   alias Hornet.ParamsValidator
   alias Hornet.Worker.WorkerSupervisor
 
+  @spec start_link(Keyword.t()) :: GenServer.on_start()
   def start_link(params) do
     clean_params = ParamsValidator.validate!(params)
 
     GenServer.start_link(__MODULE__, clean_params, name: Keyword.fetch!(params, :id))
   end
 
+  @spec state(atom() | pid()) :: map()
   def state(name) do
     GenServer.call(name, :state)
   end
 
+  @spec stop(atom() | pid()) :: :ok
   def stop(name) do
     :ok = GenServer.call(name, :stop)
 
@@ -27,7 +30,7 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def init(params) do
-    rate_period = params[:rate_period] || @rate_check
+    rate_period = params[:rate_period]
 
     {:ok, supervisor} = HornetDynamicSupervisor.start_link()
 

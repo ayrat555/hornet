@@ -9,6 +9,7 @@ defmodule Hornet.ParamsValidator do
     rate_period: 1_000
   }
 
+  @spec validate!(Keyword.t()) :: Keyword.t()
   def validate!(params) do
     params
     |> clean_params()

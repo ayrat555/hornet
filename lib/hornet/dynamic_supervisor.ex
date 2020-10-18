@@ -1,6 +1,7 @@
 defmodule Hornet.DynamicSupervisor do
   use DynamicSupervisor
 
+  @spec start_link() :: Supervisor.on_start()
   def start_link() do
     DynamicSupervisor.start_link(__MODULE__, [])
   end
