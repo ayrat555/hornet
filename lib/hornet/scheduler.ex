@@ -22,10 +22,7 @@ defmodule Hornet.Scheduler do
 
   @spec stop(atom() | pid()) :: :ok
   def stop(name) do
-    :ok = GenServer.call(name, :stop)
-
-    pid = Process.whereis(name)
-    true = Process.exit(pid, :kill)
+    send(name, :stop)
 
     :ok
   end
@@ -89,15 +86,15 @@ defmodule Hornet.Scheduler do
   end
 
   @impl true
-  def handle_call(:state, _from, state) do
-    {:reply, state, state}
+  def handle_info(:stop, state) do
+    :ok = DynamicSupervisor.stop(state.supervisor)
+
+    {:stop, :normal, state}
   end
 
   @impl true
-  def handle_call(:stop, _from, state) do
-    :ok = DynamicSupervisor.stop(state.supervisor)
-
-    {:reply, :ok, state}
+  def handle_call(:state, _from, state) do
+    {:reply, state, state}
   end
 
   defp adjust_workers(state) do

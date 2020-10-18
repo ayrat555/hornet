@@ -166,6 +166,8 @@ defmodule Hornet.SchedulerTest do
     state = Scheduler.state(params[:id])
     Scheduler.stop(params[:id])
 
+    Process.sleep(2_000)
+
     refute Process.alive?(state.supervisor)
     refute Process.alive?(state.rate_counter)
     refute Process.alive?(state.worker_supervisor)

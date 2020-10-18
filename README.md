@@ -13,7 +13,7 @@ Add `:hornet` as a dependency to your project's `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:hornet, "~> 0.1.0"}
+    {:hornet, "~> 0.1.1"}
   ]
 end
 ```
