@@ -1,8 +1,11 @@
 defmodule Hornet.Worker.WorkerSupervisor do
+  @moduledoc false
+
   use Supervisor
 
   alias Hornet.Worker
 
+  @spec start_link(Keyword.t()) :: Supervisor.on_start()
   def start_link(opts) do
     Supervisor.start_link(__MODULE__, opts)
   end

@@ -1,8 +1,11 @@
 defmodule Hornet.Worker do
+  @moduledoc false
+
   use GenServer
 
   alias Hornet.RateCounter
 
+  @spec start_link(Keyword.t()) :: GenServer.on_start()
   def start_link(params) do
     GenServer.start_link(__MODULE__, params)
   end

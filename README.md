@@ -1,53 +1,41 @@
 # Hornet
 
-Hornet - a library for stress testing. It dynamically starts multiple processes which execute the given function so the number of executions per second is constant.
+ Hornet is a simple library for stress testing.
+
+It executes the given function with the given rate (calls per second) dynamically changing the number of processes to maintain the rate.
 
 ## Installation
 
-It's not available on hex.pm yet. So the only way to install it using this repo:
+The easiest way to add Hornet to your project is by [using Mix](http://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html).
+
+Add `:hornet` as a dependency to your project's `mix.exs`:
 
 ```elixir
-def deps do
+defp deps do
   [
-    {:hornet, git: "https://github.com/ayrat555/hornet"}
+    {:hornet, "~> 0.1.0"}
   ]
 end
 ```
 
-## Usage
+## Documentation
 
-```elixir
+Documentation is [available on Hexdocs](https://hexdocs.pm/hornet/)
 
-func = fn -> "Hello"  end
-params = [id: :test, func: func, rate: 10]
+## Contributing
 
-{:ok, pid} = Hornet.start(params)
+1. [Fork it!](http://github.com/ayrat555/hornet/fork)
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
 
-# stops all related processes
-:ok = Hornet.stop(:test)
-```
+## Author
 
-## Configuration
-
-Required parameters:
-
-```elixir
-    :rate - the required operations per second
-    :id - unique id
-    :func - the function that has to be executed
-```
-
-Optional parameters:
-
-```elixir
-    :period - starting period for processes. Each process executes the function periocally using this period. Default value is 100 ms
-    :period_step - adjusting step for the period. Default value is 50 ms
-    :rate_period - period of rate update
-    :adjust_period - number of workers and period are adjusted periocally using this value. Default value is 5000 ms
-    :error_rate - allowed error rate |expected_rate - actual_rate| / expected_rate < error_rate. Default value is 0.1
-```
+Ayrat Badykov (@ayrat555)
 
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/hornet](https://hexdocs.pm/hornet).
+## License
+
+Hornet is released under the MIT License. See the LICENSE file for further
+details.

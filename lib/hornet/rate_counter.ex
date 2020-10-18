@@ -1,16 +1,21 @@
 defmodule Hornet.RateCounter do
+  @moduledoc false
+
   use GenServer
 
   @interval 1_000
 
+  @spec start_link(Keyword.t()) :: GenServer.on_start()
   def start_link(params \\ []) do
     GenServer.start_link(__MODULE__, params)
   end
 
+  @spec inc(pid()) :: :ok
   def inc(pid) do
     GenServer.cast(pid, :inc)
   end
 
+  @spec rate(pid()) :: non_neg_integer()
   def rate(pid) do
     GenServer.call(pid, :rate)
   end
