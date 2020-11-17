@@ -2,7 +2,7 @@
 
  Hornet is a simple library for stress testing.
 
-It executes the given function with the given rate (calls per second) dynamically changing the number of processes to maintain the rate.
+It executes the given function with the given rate (calls per second), dynamically changing the number of processes to maintain the rate.
 
 ## Installation
 
@@ -23,7 +23,7 @@ end
 To start Hornet use `Hornet.start/1`:
 
 ```elixir
-params = [rate: 10, func: fn -> 1 + 1, id: :add]
+params = [rate: 100, func: fn -> 1 + 1 end, id: :add]
 
 Hornet.start(params)
 ```
