@@ -8,7 +8,8 @@ defmodule Hornet.ParamsValidator do
     adjust_period: 5_000,
     error_rate: 0.1,
     process_number_limit: nil,
-    rate_period: 1_000
+    rate_period: 1_000,
+    log_period: 0
   }
 
   @spec validate!(Keyword.t()) :: Keyword.t()
