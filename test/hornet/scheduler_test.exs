@@ -1,6 +1,8 @@
 defmodule Hornet.SchedulerTest do
   use ExUnit.Case
 
+  import ExUnit.CaptureLog
+
   alias Hornet.Scheduler
   alias Hornet.RateCounter
 
@@ -171,6 +173,20 @@ defmodule Hornet.SchedulerTest do
     refute Process.alive?(state.supervisor)
     refute Process.alive?(state.rate_counter)
     refute Process.alive?(state.worker_supervisor)
+  end
+
+  test "logs messages" do
+    func = fn ->
+      :ok
+    end
+
+    params = [id: :test6, func: func, rate: 5, log_period: 1_000]
+
+    assert capture_log(fn ->
+             {:ok, _pid} = Scheduler.start_link(params)
+             Process.sleep(2_000)
+           end) =~
+             "[Hornet] Current rate: 4 | Expected rate: 5 | Allowed error rate: 0.0"
   end
 
   defp assert_rates(expected, actual, percentage \\ 0.1) do

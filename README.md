@@ -44,7 +44,7 @@ Optional parameters:
 - `error_rate` - allowed rate for difference between the expected rate and the actual rate: `|current_rate - expected_rate| < error_rate`. The default value is 0.1.
 - `process_number_limit` - if the given function's execution time is too long and the required rate is high, Hornet will be spawning processes indefinitely. This value will limit the number of processes. The default value is nil.
 - `rate_period` - the period of measuring the current rate. The default value is 1_000 ms.
-- `log_period` - the interval for the log messages.
+- `log_period` - the interval for the log messages. Disabled by default.
 
 To stop Hornet use `Hornet.stop/1`:
 

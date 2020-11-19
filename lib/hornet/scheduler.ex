@@ -55,8 +55,13 @@ defmodule Hornet.Scheduler do
     {pid, workers_count} = start_workers(supervisor, worker_params, rate_counter, period)
 
     {:ok, adjustment_timer} = :timer.send_interval(adjust_period, :adjust_workers)
-    {:ok, log_timer} = if log_period > 0 do :timer.send_interval(log_period, :log_rates) else {:ok, nil} end
 
+    {:ok, log_timer} =
+      if log_period > 0 do
+        :timer.send_interval(log_period, :log_rates)
+      else
+        {:ok, nil}
+      end
 
     state = %{
       rate_counter: rate_counter,
@@ -71,7 +76,7 @@ defmodule Hornet.Scheduler do
       process_number_limit: process_number_limit,
       adjustment_timer: adjustment_timer,
       log_period: log_period,
-      log_timer: log_timer || nil
+      log_timer: log_timer
     }
 
     {:ok, state}
@@ -93,9 +98,13 @@ defmodule Hornet.Scheduler do
 
   @impl true
   def handle_info(:log_rates, state) do
-    current_rate = RateCounter.rate(state.rate_counter) |> round()
+    current_rate =
+      state.rate_counter
+      |> RateCounter.rate()
+      |> round()
+
     expected_rate = state.params[:rate]
-    error_rate = (expected_rate * state.error_rate) |> round()
+    error_rate = Float.floor(expected_rate * state.error_rate)
 
     Logger.info(
       "[Hornet] Current rate: #{current_rate} | Expected rate: #{expected_rate} | Allowed error rate: #{
