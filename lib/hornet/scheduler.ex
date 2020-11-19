@@ -2,6 +2,7 @@ defmodule Hornet.Scheduler do
   @moduledoc false
 
   use GenServer
+  require Logger
 
   alias Hornet.DynamicSupervisor, as: HornetDynamicSupervisor
   alias Hornet.RateCounter
@@ -49,10 +50,13 @@ defmodule Hornet.Scheduler do
     adjust_period = params[:adjust_period]
     error_rate = params[:error_rate]
     process_number_limit = params[:process_number_limit]
+    log_period = params[:log_period]
 
     {pid, workers_count} = start_workers(supervisor, worker_params, rate_counter, period)
 
-    {:ok, timer} = :timer.send_interval(adjust_period, :adjust_workers)
+    {:ok, adjustment_timer} = :timer.send_interval(adjust_period, :adjust_workers)
+    {:ok, log_timer} = if log_period > 0 do :timer.send_interval(log_period, :log_rates) else {:ok, nil} end
+
 
     state = %{
       rate_counter: rate_counter,
@@ -65,7 +69,9 @@ defmodule Hornet.Scheduler do
       error_rate: error_rate,
       params: worker_params,
       process_number_limit: process_number_limit,
-      timer: timer
+      adjustment_timer: adjustment_timer,
+      log_period: log_period,
+      log_timer: log_timer || nil
     }
 
     {:ok, state}
@@ -83,6 +89,21 @@ defmodule Hornet.Scheduler do
       true ->
         adjust_workers(state)
     end
+  end
+
+  @impl true
+  def handle_info(:log_rates, state) do
+    current_rate = RateCounter.rate(state.rate_counter) |> round()
+    expected_rate = state.params[:rate]
+    error_rate = (expected_rate * state.error_rate) |> round()
+
+    Logger.info(
+      "[Hornet] Current rate: #{current_rate} | Expected rate: #{expected_rate} | Allowed error rate: #{
+        error_rate
+      }"
+    )
+
+    {:noreply, state}
   end
 
   @impl true
